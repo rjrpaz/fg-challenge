@@ -1,14 +1,14 @@
 module "storage" {
-  source = "./storage"
-  region = var.aws_region
+  source = "./modules/storage"
+  region = var.region
   bucket = var.bucket
-  name   = var.tag.name
-  owner  = var.tag.owner
+  name   = var.name
+  owner  = var.owner
 }
 
 module "compute" {
-  source = "./compute"
-  region = var.aws_region
-  name   = var.tag.name
-  owner  = var.tag.owner
+  source = "./modules/compute"
+  region = var.region
+  name   = var.name
+  owner  = var.owner
 }
