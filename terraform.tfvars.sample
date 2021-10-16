@@ -1,0 +1,2 @@
+aws_region = "us-east-1" # Select a proper region
+bucket = "choose-an-usable-s3name"
