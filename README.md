@@ -18,7 +18,7 @@ Complete the test #1 + the following actions:
 
 - Merge any pending PR.
 - Create a new PR with code and updated documentation for the new requirement.
-- I want a cluster of 2 EC2 instances behind an ALB running Nginx, serving a static file. This static file must be generated at boot, using a Python script. Put the AWS instance tags in the file.
+- Create a cluster of 2 EC2 instances behind an ALB running Nginx, serving a static file. This static file must be generated at boot, using a Python script. Put the AWS instance tags in the file.
 - The cluster must be deployed in a new VPC. This VPC must have only one public subnet. Do not use default VPC
 - Update the tests to validate the infrastructure. The test must check that files are reachable in the ALB.
 
@@ -180,3 +180,164 @@ pull_request:
     -
    ...
 ```
+
+## Merge any pending PR
+
+Merge any pending PR done: [https://github.com/rjrpaz/fg-challenge/pull/1](https://github.com/rjrpaz/fg-challenge/pull/1)
+
+## Create a new PR with code and updated documentation for this stage
+
+Create a new PR with code and updated documentation for the new requirement.
+
+In my case I will use two separated branches (one for the code and the other for the documentation).
+
+## Create a cluster of 2 EC2 instances behind an ALB
+
+Create a cluster of 2 EC2 instances behind an ALB running Nginx, serving a static file. This static file must be generated at boot, using a Python script. Put the AWS instance tags in the file.
+
+The cluster must be deployed in a new VPC. This VPC must have only one public subnet. Do not use default VPC.
+
+References:
+
+- [https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/vpc)
+- [https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/subnet](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/subnet)
+- [https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/internet_gateway](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/internet_gateway)
+- [https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route_table](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/route_table)
+- [https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/default_route_table](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/default_route_table)
+- [https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/security_group)
+- [https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb)
+- [https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_target_group](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_target_group)
+- [https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lb_listener)
+
+This is the list of required resources:
+
+1. A new VPC.
+
+1. Two public subnets, one for each instance.
+
+1. An internet gateway
+
+1. A route table
+
+1. A default route, linked to the route table and the internet gateway
+
+1. A default route table
+
+1. A security group
+
+After this, each EC2 instance should be created using the previously created resources.
+
+Regarding application load balancer, required resources are:
+
+1. An ALB
+
+1. A target group for the ALB
+
+1. An ALB listener
+
+### Steps to create the infrastructure
+
+Steps are pretty much the same than before:
+
+1. *terraform plan/apply* will require aws credentials to run. It is recommended to provide these credentials as *environment variables* like this:
+
+    ```console
+    export AWS_ACCESS_KEY_ID="anaccesskey"
+    export AWS_SECRET_ACCESS_KEY="asecretkey"
+    ```
+
+1. Initialize terraform:
+
+    ```console
+    terraform init
+    ```
+
+1. Run terraform plan to check if there is something missing:
+
+    ```console
+    terraform plan
+    ```
+
+1. Apply terraform:
+
+    ```console
+    terraform apply --auto-approve
+    ```
+
+1. If code applied succesfully, output will show a message like this:
+
+    ```console
+       ...
+    Apply complete! Resources: 19 added, 0 changed, 0 destroyed.
+
+    Outputs:
+
+    instance-name = [
+    [
+        "Flugel-0",
+        "Flugel-1",
+    ],
+    ]
+    instance-owner = [
+    [
+        "InfraTeam",
+        "InfraTeam",
+    ],
+    ]
+    instance-public_ip = [
+    [
+        "3.95.149.26",
+        "54.211.129.15",
+    ],
+    ]
+    lb_endpoint = "loadbalancer-1076895768.us-east-1.elb.amazonaws.com"
+    public_sg = "sg-0f71b90e67340788b"
+    public_subnets = [
+    "subnet-012a93d78669cdc2c",
+    "subnet-08a00a3d0d59790fe",
+    ]
+    s3-name = [
+    "Flugel",
+    ]
+    s3-owner = [
+    "InfraTeam",
+    ]
+    ```
+
+    (variables may vary)
+
+1. Test reachability to the instances
+
+    According to the *instance-public-ip* output returned in previous step, you can check if default page is accesible on each instance, p.e.:
+
+    ```console
+    curl 3.95.149.26
+    ```
+
+    should return something like this:
+
+    ```console
+    Hello from i-0acc268ad6f017900
+    ```
+
+1. Test reachability to the load balancer
+
+    You can also test reachability to the ALB endpoint using the returned *lb_endpoint* value, p.e.:
+
+    ```console
+    curl loadbalancer-1076895768.us-east-1.elb.amazonaws.com
+    ```
+
+    Run this command a few times and note that the ALB returns the default page for both instances in round-robin, like this:
+
+    ```console
+    [roberto@vmlab01 fg-challenge]$ curl loadbalancer-1076895768.us-east-1.elb.amazonaws.com
+    Hello from i-09c31c92a7f42443a
+    [roberto@vmlab01 fg-challenge]$ curl loadbalancer-1076895768.us-east-1.elb.amazonaws.com
+    Hello from i-0acc268ad6f017900
+    ```
+
+## TODO
+
+- Add additional testing steps to check web reachability to the ABL.
+- Add some other tools to do static linting and vulnerability checking to the terraform code as part of the github actions.
