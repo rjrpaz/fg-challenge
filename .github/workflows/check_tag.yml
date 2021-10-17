@@ -28,9 +28,9 @@ jobs:
 #        ssh-private-key: ${{ secrets.SSH_KEY }}
 
     - name: Setup Dependencies
-      working-directory: tests/
+      working-directory: test/
       run:  go get -v -t -d && go mod tidy
 
     - name: Test
-      working-directory: tests/
+      working-directory: test/
       run: go test -v
